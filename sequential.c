@@ -14,9 +14,16 @@
 #include <stdlib.h>
 #include <time.h>
 
-// Gerando números aleatórios para esse trabalho entre -1024 e 1024.
+#define DOES_NOT_CONVERGE 1
+#define CONVERGE 0
+
+#define DEBUG 1
+#define DEBUG_LEVEL_2 0
+
+// Os números que compõem a matriz gerada aleatóriamente terão
+// valores entre -1024 e 1024
 #define MAXVAL 1024
-#define ERROR_TOLERANCE 0.001
+#define ERROR_TOLERANCE 0.0001
 
 // Função para alocar matrizes e vetores
 void initialize(float ***A, float **currentX, float **B, float ***normalizedA, float **previousX, float **normalizedB ,int n) {
@@ -44,25 +51,37 @@ float absolute(float x) {
     return x < 0.0 ? -x : x;
 }
 
-// Checa se o método irá convergir ao analisar os valores de A.
+// Checa se o método de Jacobi-Richardson convergirá
+// analisando se A é estritamente diagonal dominante
 // Análise feita por linhas.
 // Se convergir, retorna 0. Se não convergir, retorna 1.
 int doesNotConverge(float **A, int n) {
     int i, j;
     float sum;
+
     for(i = 0; i < n; i ++) {
         sum = 0.0;
         for(j = 0; j < n; j++) {
             if(i != j) {
                 sum += absolute(A[i][j]);
+                if (DEBUG_LEVEL_2) {
+                    printf("doesNotConverge - line sum: %f\n", sum);
+                }
             }
         }
-        if(sum < absolute(A[i][i])) {
-            return 1;
+
+        if(sum > absolute(A[i][i])) {
+            if (DEBUG) {
+                printf("doesNotConverge - DOES_NOT_CONVERGE\n");
+            }
+            return DOES_NOT_CONVERGE;
         }
     }
-    
-    return 0;
+
+    if (DEBUG) {
+        printf("doesNotConverge - CONVERGE\n");
+    }    
+    return CONVERGE;
 }
 
 // Popula a matriz A e o vetor B com valores aleatórios
@@ -83,15 +102,14 @@ void populate(float **A, float *B, int n) {
     // Popula o vetor B
     for(i = 0; i < n; i ++) {
         B[i] = (float) (rand() % (2 * MAXVAL + 1) - MAXVAL);
-    }
-    
+    } 
 }
 
 // Calcula os valores normalizados para a matriz A e para o vetor B.
 // Os valores iniciais das variáveis X são definidos como o vetor B normalizado.
-void calculateNormalizedValues(float **A, float *currentX, float *B, float **normalizedA, float *normalizedB ,int n) {
+void normalize(float **A, float *currentX, float *B, float **normalizedA, float *normalizedB ,int n) {
     int i, j;
-    
+
     for(i = 0; i < n; i ++) {
         for(j = 0; j < n; j++) {
             if(i == j) {
@@ -102,7 +120,7 @@ void calculateNormalizedValues(float **A, float *currentX, float *B, float **nor
             }
         }
     }
-    
+
     for(i = 0; i < n; i++) {
         normalizedB[i] = B[i] / A[i][i];
         currentX[i] = normalizedB[i];
@@ -126,7 +144,7 @@ void computeNewCurrentX(float *currentX, float *previousX, float **normalizedA, 
         sum = 0.0;
         for(j = 0; j < n; j++) {
             if(i != j) {
-                sum += normalizedA[i][j] * previousX[j];
+                sum -= normalizedA[i][j] * previousX[j];
             }
         }
         sum += normalizedB[i];
@@ -134,30 +152,41 @@ void computeNewCurrentX(float *currentX, float *previousX, float **normalizedA, 
     }
 }
 
-// Função utilizada para calcular o maior erro obtido na iteração atual do
-// método. São calculados os maiores valores absolutos da diferença de
-// cada X[i] (atual menos o anterior) e os valores absolutos de cada X[i]
+// Função utilizada para calcular o maior erro relativo
+// obtido na iteração atual do método. São calculados os
+// maiores valores absolutos da diferença de cada X[i]
+// (atual menos o anterior) e os valores absolutos de cada X[i]
 // atual. O retorno é a razão entre esses dois valores.
 float getError(float *currentX, float *previousX, int n) {
-    float maxError, currentError, maxAbsolute;
+    float maxRelativeError;
+    float currentAbsoluteError;
+    float maxAbsoluteEntry;
+    float currentRelativeError;
+    float currentEntry;
     int i;
-    maxError = absolute(currentX[0] - previousX[0]);
-    maxAbsolute = absolute(currentX[0]);
-    
+
+    currentAbsoluteError = absolute(currentX[0] - previousX[0]);
+    currentEntry = absolute(currentX[0]);
+    currentRelativeError = currentAbsoluteError/currentEntry;
+    maxRelativeError = currentAbsoluteError;
+
     for(i = 1; i < n; i++) {
-        currentError = absolute(currentX[i] - previousX[i]);
-        if(maxError < currentError) {
-            maxError = currentError;
-        }
-        if(maxAbsolute < absolute(currentX[i])) {
-            maxAbsolute = absolute(currentX[i]);
+        currentAbsoluteError = absolute(currentX[i] - previousX[i]);
+        currentEntry = absolute(currentX[i]);
+        currentRelativeError = currentAbsoluteError/currentEntry;
+        if (currentRelativeError > maxRelativeError){
+            maxRelativeError = currentRelativeError;
         }
     }
-    return maxError/maxAbsolute;
+
+    if (DEBUG) {
+        printf("getError - maxRelativeError [%f]\n", maxRelativeError);
+    }
+    return maxRelativeError;
 }
 
-// Função para exibir os resultados obtidos. É escolhida aleatoriamente uma equação e são mostrados
-// o resultado estimado e o esperado em B.
+// Função para exibir os resultados obtidos. É escolhida aleatoriamente
+// uma equação e são mostrados o resultado estimado e o esperado em B.
 void showResults(float **A, float *currentX, float *B, int n) {
     int i;
     float calculatedResult = 0.0;
@@ -165,28 +194,26 @@ void showResults(float **A, float *currentX, float *B, int n) {
     
     srand((unsigned int) time(NULL));
     
-    printf("Resultados obtidos para X:\n");
+    printf("Resultado X:\n");
     
     for(i = 0; i < n; i++) {
-        printf("%f ", currentX[i]);
+        printf("[%2.3f] ", currentX[i]);
     }
-    printf("\n");
+    printf("\n\n");
     
-    printf("Equação obtida: \n\n");
+    printf("Equação aleatória para avaliação de corretude:\n");
     for (i = 0; i < n; i++) {
-        printf("%f * %f", A[line][i], currentX[i]);
+        printf("%2.3f * %2.3f", A[line][i], currentX[i]);
         calculatedResult += A[line][i] * currentX[i];
         if(i != n-1) {
             printf(" + ");
         }
         else {
-            printf(" = %f", calculatedResult);
+            printf(" = [%2.3f]\n", calculatedResult);
         }
     }
-    printf("\n\nValor esperado para o resultado: %f", B[line]);
-    printf("\n\nDiferença entre resultados: %f\n\n", B[line] - calculatedResult);
-    
-    
+    printf("Valor esperado para o resultado:\n%2.3f\n", B[line]);
+    printf("Diferença entre resultados:\n%2.3f\n", B[line] - calculatedResult);
 }
 
 // Imprime os valores das matrizes
@@ -244,17 +271,22 @@ int main(int argc, const char * argv[]) {
     float *normalizedB; // Vetor B normalizado
     int n; // Ordem da matriz A
     
-    scanf("%d", &n);
-    
+    // Espera pela ordem da matriz A como primeira entrada
+    n = atoi(argv[1]);
+    //scanf("%d", &n);
+
     initialize(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, n);
     populate(A, B, n);
-    calculateNormalizedValues(A, currentX, B, normalizedA, normalizedB, n);
-    
+    normalize(A, currentX, B, normalizedA, normalizedB, n);
+    printAll(A,currentX,B,n);
+
+    printf("\n\n***** Jacobi-Richardson Method Execution *****\n");
     do {
         copyCurrentXToPreviousX(currentX, previousX, n);
         computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
     } while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
     
+    printf("\n\n");
     showResults(A, currentX, B, n);
     
     cleanUp(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, n);
