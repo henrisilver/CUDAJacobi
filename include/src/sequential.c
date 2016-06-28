@@ -48,29 +48,33 @@ int main(int argc, const char * argv[]) {
     float **normalizedA; // Matriz A normalizada
     float *normalizedB; // Vetor B normalizado
     int n; // Ordem da matriz A
+    clock_t start, end;
+    double cpu_time_used;
 
     inputFile = fopen(argv[1],"rb");
     if (inputFile == null) {
         perror("Failed to open file");
         exit(0);
     }
-
+     
+    start = clock();
     initialize(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, &n, inputFile);
     readDataFromInputFile(A, B, n, inputFile);
     normalize(A, currentX, B, normalizedA, normalizedB, n);
-    printAll(A,currentX,B,n);
+    //printAll(A,currentX,B,n);
 
-    printf("\n\n***** Jacobi-Richardson Method Execution *****\n");
+    printf("\n\n***** Jacobi-Richardson Method Sequential Execution *****\n");
     do {
         copyCurrentXToPreviousX(currentX, previousX, n);
         computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
     } while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
+    end = clock();
 
     printf("\n\n");
     showResults(A, currentX, B, n);
-    
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("Elapsed time: %fs\n", cpu_time_used);
     cleanUp(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, n);
-
     return 0;
 }
 
@@ -199,27 +203,26 @@ float getError(float *currentX, float *previousX, int n) {
 void showResults(float **A, float *currentX, float *B, int n) {
     int i;
     float calculatedResult = 0.0;
+
     int line = rand() % n;
-    
-    srand((unsigned int) time(NULL));
-    
+    /*
     printf("Resultado X:\n");
     
     for(i = 0; i < n; i++) {
         printf("[%2.3f] ", currentX[i]);
     }
     printf("\n\n");
-    
+    */
     printf("Equação aleatória para avaliação de corretude:\n");
     for (i = 0; i < n; i++) {
-        printf("%2.3f * %2.3f", A[line][i], currentX[i]);
+        //printf("%2.3f * %2.3f", A[line][i], currentX[i]);
         calculatedResult += A[line][i] * currentX[i];
-        if(i != n-1) {
+        /*if(i != n-1) {
             printf(" + ");
         }
         else {
             printf(" = [%2.3f]\n", calculatedResult);
-        }
+        }*/
     }
     printf("Valor esperado para o resultado:\n%2.3f\n", B[line]);
     printf("Diferença entre resultados:\n%2.3f\n", B[line] - calculatedResult);
