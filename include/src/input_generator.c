@@ -69,7 +69,7 @@ void generateLine(float **A, int line, int size) {
     int maxLineEntryIndex = 0;
     int i;
 
-    for (int i = 0; i < size; ++i) {
+    for (i = 0; i < size; ++i) {
         temp = (float) (rand() % (2 * MAXVAL + 1) - MAXVAL);
         A[line][i] = temp;
         if (i != line)
@@ -144,7 +144,7 @@ void writeFile(float **A, float *B, int size, FILE *file){
     printf("Writing file...\n");
     fwrite(&size, sizeof(int), 1, file);
 
-    for (int i = 0 ; i < size ; i++) {
+    for (i = 0 ; i < size ; i++) {
         for (int j = 0 ; j < size ; j++) {
             fwrite(&A[i][j], sizeof(float), 1, file);
         }
