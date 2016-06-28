@@ -103,8 +103,12 @@ void generateLine(float **A, int line, int size) {
             return;
         } else {
             float correction = (float) (rand() % (int) diff / 2);
-
-            A[line][line] = A[line][line] + correction;
+            if (A[line][line] > 0.0){
+                A[line][line] = A[line][line] + correction;
+            } else {
+                A[line][line] = A[line][line] - correction;
+            }
+            
             /*while (diff >= 0.0) {
                 while ((i = (int) (rand() % size)) == line);
                 int mod = (int)A[line][i]+1;
