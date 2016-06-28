@@ -84,7 +84,7 @@ void generateLine(float **A, int line, int size) {
     if (sum < absolute(A[line][line])) {
         return;
     } else if (sum == 0){
-        A[line][line] == 1;
+        A[line][line] = 1;
     } else {
         temp = A[line][line];
         A[line][line] = maxLineEntry;
