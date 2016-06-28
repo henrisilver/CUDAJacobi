@@ -75,7 +75,7 @@ void printB(float *B, int n){
 }
 
 // Função para alocar matrizes e vetores
-void initialize(float ***A, float **currentX, float **B, float ***normalizedA, float **previousX, float **normalizedB , int *n, FILE *file) {
+__host __ void initialize(float ***A, float **currentX, float **B, float ***normalizedA, float **previousX, float **normalizedB , int *n, FILE *file) {
     int i; // Variável utilizada para iteração
     fread(n, sizeof(int), 1, file);
 
@@ -95,7 +95,7 @@ void initialize(float ***A, float **currentX, float **B, float ***normalizedA, f
     *normalizedB = (float *) malloc(*n * sizeof(float));
 }
 
-void readDataFromInputFile(float **A, float *B, int n, FILE *inputFile) {
+__host __ void readDataFromInputFile(float **A, float *B, int n, FILE *inputFile) {
     int i, j;
 
     for(i = 0; i < n; i ++) {
