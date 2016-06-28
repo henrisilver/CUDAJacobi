@@ -145,7 +145,7 @@ void writeFile(float **A, float *B, int size, FILE *file){
     fwrite(&size, sizeof(int), 1, file);
 
     for (i = 0 ; i < size ; i++) {
-        for (int j = 0 ; j < size ; j++) {
+        for (j = 0 ; j < size ; j++) {
             fwrite(&A[i][j], sizeof(float), 1, file);
         }
     }
