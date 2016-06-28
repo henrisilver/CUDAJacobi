@@ -123,7 +123,6 @@ __device__ void getError(float *currentX, float *previousX, int n) {
  }
 
 __host__ void initialize(float **A, float **currentX, float **B, int *n, FILE *file) {
-    int i; // Variável utilizada para iteração
     fread(n, sizeof(int), 1, file);
 
     *A = (float *) malloc((*n) * (*n) * sizeof(float));
@@ -259,7 +258,7 @@ int main(int argc, const char * argv[]) {
 
     solveJacobiRichardson<<<1, n>>>(d_A, d_B, d_normalizedA, d_normalizedB, d_currentX, d_previousX, n);
 
-    cudaMemcpy(h_currentX,d_currentX,size,cudaMemcpyDeviceToHost);
+    cudaMemcpy(h_currentX,d_currentX, n * sizeof(float),cudaMemcpyDeviceToHost);
 
     printf("\n\n");
     showResults(h_A, h_currentX, h_B, n);
