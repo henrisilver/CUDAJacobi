@@ -16,7 +16,7 @@ sequential:
 	gcc -o sequential include/src/sequential.c
 
 paralell:
-	nvcc -o paralell include/src/parallel.c
+	nvcc -o paralell include/src/parallel.cu
 
 runseq:
 	./generator 20000 input
