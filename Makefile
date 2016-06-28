@@ -16,7 +16,7 @@ sequential:
 	gcc -o sequential include/src/sequential.c
 
 paralell:
-	gcc -o paralell include/src/jacobi-richardson.c
+	nvcc -o paralell include/src/jacobi-richardson.c
 
 runseq:
 	./generator 1000 input
