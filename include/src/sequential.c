@@ -24,85 +24,94 @@
 // valores entre -1024 e 1024
 #define MAXVAL 1024
 #define ERROR_TOLERANCE 0.0001
+#define null NULL
+
+void initialize(float ***A, float **currentX, float **B, float ***normalizedA, float **previousX, float **normalizedB ,int *n, FILE *file);
+float absolute(float x);
+int doesNotConverge(float **A, int n);
+void readDataFromInputFile(float **A, float *B, int n, FILE *inputFile);
+void normalize(float **A, float *currentX, float *B, float **normalizedA, float *normalizedB ,int n);
+void copyCurrentXToPreviousX(float *currentX, float *previousX, int n);
+void computeNewCurrentX(float *currentX, float *previousX, float **normalizedA, float *normalizedB, int n);
+float getError(float *currentX, float *previousX, int n);
+void showResults(float **A, float *currentX, float *B, int n);
+void printAll(float **A, float *X, float *B, int n);
+void cleanUp(float ***A, float **currentX, float **B, float ***normalizedA, float **previousX, float **normalizedB ,int n);
+
+int main(int argc, const char * argv[]) {
+
+    FILE *inputFile = null;   
+    float **A; // Matriz A original
+    float *previousX; // Vetor X - variáveis - valores da iteração anterior
+    float *currentX; // Vetor X - variáveis - valores da iteração atual
+    float *B; // Vetor B original
+    float **normalizedA; // Matriz A normalizada
+    float *normalizedB; // Vetor B normalizado
+    int n; // Ordem da matriz A
+
+    inputFile = fopen(argv[1],"rb");
+    if (inputFile == null) {
+        perror("Failed to open file");
+        exit(0);
+    }
+
+    initialize(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, &n, inputFile);
+    readDataFromInputFile(A, B, n, inputFile);
+    normalize(A, currentX, B, normalizedA, normalizedB, n);
+    printAll(A,currentX,B,n);
+
+    printf("\n\n***** Jacobi-Richardson Method Execution *****\n");
+    do {
+        copyCurrentXToPreviousX(currentX, previousX, n);
+        computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
+    } while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
+
+    printf("\n\n");
+    showResults(A, currentX, B, n);
+    
+    cleanUp(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, n);
+
+    return 0;
+}
 
 // Função para alocar matrizes e vetores
-void initialize(float ***A, float **currentX, float **B, float ***normalizedA, float **previousX, float **normalizedB ,int n) {
+void initialize(float ***A, float **currentX, float **B, float ***normalizedA, float **previousX, float **normalizedB , int *n, FILE *file) {
     int i; // Variável utilizada para iteração
-    
-    *A = (float **) malloc(n * sizeof(float *));
-    for(i = 0; i < n; i++) {
-        (*A)[i] = (float *) malloc(n * sizeof(float));
+    fread(n, sizeof(int), 1, file);
+
+    *A = (float **) malloc(*n * sizeof(float *));
+    for(i = 0; i < *n; i++) {
+        (*A)[i] = (float *) malloc(*n * sizeof(float));
     }
-    
-    *normalizedA = (float **) malloc(n * sizeof(float *));
-    for(i = 0; i < n; i++) {
-        (*normalizedA)[i] = (float *) malloc(n * sizeof(float));
+
+    *normalizedA = (float **) malloc(*n * sizeof(float *));
+    for(i = 0; i < *n; i++) {
+        (*normalizedA)[i] = (float *) malloc(*n * sizeof(float));
     }
-    
-    *currentX = (float *) malloc(n * sizeof(float));
-    
-    *previousX = (float *) malloc(n * sizeof(float));
-    
-    *B = (float *) malloc(n * sizeof(float));
-    *normalizedB = (float *) malloc(n * sizeof(float));
+
+    *currentX = (float *) malloc(*n * sizeof(float));
+    *previousX = (float *) malloc(*n * sizeof(float));
+    *B = (float *) malloc(*n * sizeof(float));
+    *normalizedB = (float *) malloc(*n * sizeof(float));
 }
 
 float absolute(float x) {
+    //
     return x < 0.0 ? -x : x;
 }
 
-// Checa se o método de Jacobi-Richardson convergirá
-// analisando se A é estritamente diagonal dominante
-// Análise feita por linhas.
-// Se convergir, retorna 0. Se não convergir, retorna 1.
-int doesNotConverge(float **A, int n) {
+void readDataFromInputFile(float **A, float *B, int n, FILE *inputFile) {
     int i, j;
-    float sum;
 
     for(i = 0; i < n; i ++) {
-        sum = 0.0;
         for(j = 0; j < n; j++) {
-            if(i != j) {
-                sum += absolute(A[i][j]);
-                if (DEBUG_LEVEL_2) {
-                    printf("doesNotConverge - line sum: %f\n", sum);
-                }
-            }
-        }
-
-        if(sum > absolute(A[i][i])) {
-            if (DEBUG) {
-                printf("doesNotConverge - DOES_NOT_CONVERGE\n");
-            }
-            return DOES_NOT_CONVERGE;
+            fread(&A[i][j], sizeof(float), 1, inputFile);
         }
     }
 
-    if (DEBUG) {
-        printf("doesNotConverge - CONVERGE\n");
-    }    
-    return CONVERGE;
-}
-
-// Popula a matriz A e o vetor B com valores aleatórios
-void populate(float **A, float *B, int n) {
-    int i, j;
-    srand((unsigned int) time(NULL));
-    
-    // Calcula a matriz A enquanto os valores aleatórios utilizados
-    // forem tais que o método não converge
-    do {
-        for(i = 0; i < n; i ++) {
-            for(j = 0; j < n; j++) {
-                A[i][j] = (float) (rand() % (2 * MAXVAL + 1) - MAXVAL);
-            }
-        }
-    } while(doesNotConverge(A, n));
-    
-    // Popula o vetor B
     for(i = 0; i < n; i ++) {
-        B[i] = (float) (rand() % (2 * MAXVAL + 1) - MAXVAL);
-    } 
+        fread(&B[i], sizeof(float), 1, inputFile);
+    }
 }
 
 // Calcula os valores normalizados para a matriz A e para o vetor B.
@@ -259,37 +268,4 @@ void cleanUp(float ***A, float **currentX, float **B, float ***normalizedA, floa
     free(*normalizedB);
     free(*currentX);
     free(*previousX);
-}
-
-int main(int argc, const char * argv[]) {
-    
-    float **A; // Matriz A original
-    float *previousX; // Vetor X - variáveis - valores da iteração anterior
-    float *currentX; // Vetor X - variáveis - valores da iteração atual
-    float *B; // Vetor B original
-    float **normalizedA; // Matriz A normalizada
-    float *normalizedB; // Vetor B normalizado
-    int n; // Ordem da matriz A
-    
-    // Espera pela ordem da matriz A como primeira entrada
-    n = atoi(argv[1]);
-    //scanf("%d", &n);
-
-    initialize(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, n);
-    populate(A, B, n);
-    normalize(A, currentX, B, normalizedA, normalizedB, n);
-    printAll(A,currentX,B,n);
-
-    printf("\n\n***** Jacobi-Richardson Method Execution *****\n");
-    do {
-        copyCurrentXToPreviousX(currentX, previousX, n);
-        computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
-    } while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
-    
-    printf("\n\n");
-    showResults(A, currentX, B, n);
-    
-    cleanUp(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, n);
-    
-    return 0;
 }

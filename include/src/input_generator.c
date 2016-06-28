@@ -34,7 +34,6 @@ int main(int argc, char const *argv[]){
     populate(A,B,dimension);
     writeFile(A,B,dimension,output);
     printAll(A,B,dimension);
-
     fclose(output);
     return 0;
 }
@@ -73,7 +72,6 @@ void generateLine(float **A, int line, int size) {
     for (int i = 0; i < size; ++i) {
         temp = (float) (rand() % (2 * MAXVAL + 1) - MAXVAL);
         A[line][i] = temp;
-        //printf("temp: %f\n", temp);
         if (i != line)
             sum = sum + absolute(temp);
 
@@ -84,13 +82,10 @@ void generateLine(float **A, int line, int size) {
     }
     
     if (sum < absolute(A[line][line])) {
-        //printf("Line %d converge\n", line);
         return;
     } else if (sum == 0){
         A[line][line] == 1;
-        //printf("Line %d does not converge!\n", line);
     } else {
-        //printf("Line %d does not converge!\n", line);
         temp = A[line][line];
         A[line][line] = maxLineEntry;
         A[line][maxLineEntryIndex] = temp;
@@ -98,28 +93,30 @@ void generateLine(float **A, int line, int size) {
 
         sum = sum - absolute(maxLineEntry) + absolute(temp);
         diff = sum - absolute(maxLineEntry);
-        //printf("Diff: %f\n", diff);
         
-        if (diff == 0) {
-            while ((i = (int) (rand() % size)) == line){
-                A[line][i]--;
+        if (diff == 0.0) {
+            if (A[line][line] > 0.0){
+                A[line][line]++;
+            } else {
+                A[line][line]--;
             }
             return;
         } else {
-            while (diff >= 0){
-                while ((i = (int) (rand() % size)) == line);
-                //printf("i: %d\n", i);
+            float correction = (float) (rand() % (int) diff / 2);
 
+            A[line][line] = A[line][line] + correction;
+            /*while (diff >= 0.0) {
+                while ((i = (int) (rand() % size)) == line);
                 int mod = (int)A[line][i]+1;
                 mod = mod == 0 ? 1 : mod;
                 temp = (float)(rand() % mod);
                 if (A[line][i] < 0.0) {
-                    A[line][i] = A[line][i] + absolute(temp);
+                    A[line][i] = A[line][i] + temp;
                 } else {
-                    A[line][i] = A[line][i] - absolute(temp);
+                    A[line][i] = A[line][i] - temp;
                 }
-                diff = diff - absolute(temp);
-            }
+                diff = diff - temp;
+            }*/
         }
     }
 }
@@ -147,9 +144,13 @@ void writeFile(float **A, float *B, int size, FILE *file){
     printf("Writing file...\n");
     fwrite(&size, sizeof(int), 1, file);
 
-    for (int i = 0 ; i < size ; i++){
-        for (int j = 0 ; j < size ; j++){
+    for (int i = 0 ; i < size ; i++) {
+        for (int j = 0 ; j < size ; j++) {
             fwrite(&A[i][j], sizeof(float), 1, file);
         }
+    }
+
+    for (int i = 0 ; i < size ; i++) {
+        fwrite(&B[i], sizeof(float), 1, file);
     }
 }
