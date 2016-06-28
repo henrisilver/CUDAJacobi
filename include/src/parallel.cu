@@ -56,7 +56,6 @@
 __device__ void getError(float *currentX, float *previousX, int n) {
     float maxRelativeError;
     float currentAbsoluteError;
-    float maxAbsoluteEntry;
     float currentRelativeError;
     float currentEntry;
     int i;
@@ -96,7 +95,7 @@ __device__ void getError(float *currentX, float *previousX, int n) {
             sum -= normalizedA[myIndex * n + j] * previousX[j];
         }
     }
-        sum += normalizedB[i];
+        sum += normalizedB[myIndex];
         currentX[myIndex] = sum;
 
 }
@@ -107,7 +106,7 @@ __device__ void getError(float *currentX, float *previousX, int n) {
     previousX[myIndex] = currentX[myIndex];
 }
 
- __global__ void solveJacobiRichardson(float *A, float *B, float *normalizedA, float *normalizedB,int* currentX, int *previousX, int n) {
+ __global__ void solveJacobiRichardson(float *A, float *B, float *normalizedA, float *normalizedB, float * currentX, float *previousX, int n) {
 
     int myIndex = threadIdx.x;
     if(myIndex < n) {
