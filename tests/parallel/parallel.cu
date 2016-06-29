@@ -259,15 +259,6 @@ int main(int argc, const char * argv[]) {
 
     cudaMemcpy(d_A,h_A, n * n * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_B,h_B, n * sizeof(float), cudaMemcpyHostToDevice);
-    
-    //printAll(A,currentX,B,n);
-
-    //printf("\n\n***** Jacobi-Richardson Method Execution *****\n");
-    // do {
-    //     copyCurrentXToPreviousX(currentX, previousX, n);
-    //     computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
-    // } while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
-    // <<<<<>>>>>> CUDA FREE THRUST
 
     solveJacobiRichardson<<<1, n>>>(d_A, d_B, d_normalizedA, d_normalizedB, d_currentX, d_previousX, n);
 
