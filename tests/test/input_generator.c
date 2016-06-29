@@ -32,7 +32,7 @@ int main(int argc, char const *argv[]){
     }
     srand((unsigned)time(NULL));
 
-    // Recupera o argumento com a dimencao da matriz
+    // Recupera o argumento com a dimensao da matriz
     dimension = atoi(argv[1]);
 
     // Inicializa duas estruturas A e B.
@@ -72,7 +72,7 @@ void populate(float **A, float *B, int n){
         generateLine(A, i, n);
     }
 
-    // Preenche um vetor de dimencao N com numeros aleatorios
+    // Preenche um vetor de dimensao N com numeros aleatorios
     for(i = 0; i < n; i ++) {
         B[i] = (float) (rand() % (2 * MAXVAL + 1) - MAXVAL);
     }
