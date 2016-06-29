@@ -49,44 +49,65 @@ int main(int argc, const char * argv[]) {
     float **normalizedA; // Matriz A normalizada
     float *normalizedB; // Vetor B normalizado
     int n; // Ordem da matriz A
-    clock_t start, end;
-    double cpu_time_used;
-    //int i;
+    clock_t start; // Clock no comeco da execucao
+    clock_t end; // Clock ao fim da execucao
+    double cpu_time_used; // Tempo de cpu utilizado
 
+    // Tenta abrir o arquivo de input e se falhar, sai do programa
     inputFile = fopen(argv[1],"rb");
     if (inputFile == null) {
         perror("Failed to open file");
         exit(0);
     }
 
+    // Tenta abrir o arquivo de output e se falhar, sai do programa
     outputFile = fopen(argv[2],"wt");
     if (outputFile == null) {
         perror("Failed to open file");
         exit(0);
     }
-     
+    // Inicio da execucao
     start = clock();
+    // Aloca a memoria para a matrix A, vetor B, matriz normalizada de A, matriz normalizada
+    // de B, vetor X corrente e vetor X anterior. Além disso recupera do arquivo de entrada
+    // a dimencao da matriz e dos vetores que serao lidos de inputFile
     initialize(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, &n, inputFile);
-    readDataFromInputFile(A, B, n, inputFile);
-    normalize(A, currentX, B, normalizedA, normalizedB, n);
-    //printAll(A,currentX,B,n);
 
-    //printf("\n\n***** Jacobi-Richardson Method Sequential Execution *****\n");
+    // Apos a alocacao das memorias, readDataFromInputFile preenche a Matriz A e o vetor B
+    // com os valores lidos de inputFile
+    readDataFromInputFile(A, B, n, inputFile);
+
+    // Calcula a matriz normalizada e o vetor normalizado
+    // A matriz a vira (L* + R*)
+    normalize(A, currentX, B, normalizedA, normalizedB, n);
+
     do {
+        // Copia os valores atual de X para o proximo vetor X para a proxima iteracao
+        // do metodo
         copyCurrentXToPreviousX(currentX, previousX, n);
+
+        // Calcula os novos valores de X resultando na iteracao K+1
         computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
-    } while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
+    }
+    // A condicao de parada e alcancada quando o maior erro relativo encontrado na
+    // iteracao K+1 for menor que a precisao estipulada como tolerancia
+    while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
+
+    // Fim da execucao
     end = clock();
 
-    //printf("\n\n");
-    //showResults(A, currentX, B, n);
+    // Calcula o tempo de CPU utilizado
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
+
+    // Escreve os resultados no arquivo de saida
     fprintf(outputFile, "*** Sequential Results ***\n");
     showResults(A, currentX, B, n, outputFile);
 
     fclose(inputFile);
     fclose(outputFile);
+
+    // Libera a memoria alocada
     cleanUp(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, n);
     return 0;
 }
@@ -96,36 +117,45 @@ void initialize(float ***A, float **currentX, float **B, float ***normalizedA, f
     int i; // Variável utilizada para iteração
     fread(n, sizeof(int), 1, file);
 
+    // Aloca espaco para a matriz A
     *A = (float **) malloc(*n * sizeof(float *));
     for(i = 0; i < *n; i++) {
         (*A)[i] = (float *) malloc(*n * sizeof(float));
     }
 
+    // Aloca espaco para a matriz normalizada A
     *normalizedA = (float **) malloc(*n * sizeof(float *));
     for(i = 0; i < *n; i++) {
         (*normalizedA)[i] = (float *) malloc(*n * sizeof(float));
     }
 
+    // Aloca espaco para os vetores x atual, x anterior,
+    // B e B normalizado
     *currentX = (float *) malloc(*n * sizeof(float));
     *previousX = (float *) malloc(*n * sizeof(float));
     *B = (float *) malloc(*n * sizeof(float));
     *normalizedB = (float *) malloc(*n * sizeof(float));
 }
 
+// Retorna sempre o valor positivo de X
 float absolute(float x) {
-    //
     return x < 0.0 ? -x : x;
 }
 
+// Le os dados do arquivo de entrada inputFile para preencher as estruturas A e B
 void readDataFromInputFile(float **A, float *B, int n, FILE *inputFile) {
-    int i, j;
+    // Iteradores
+    int i;
+    int j;
 
+    // Preenche A
     for(i = 0; i < n; i ++) {
         for(j = 0; j < n; j++) {
             fread(&A[i][j], sizeof(float), 1, inputFile);
         }
     }
 
+    // Preenche B
     for(i = 0; i < n; i ++) {
         fread(&B[i], sizeof(float), 1, inputFile);
     }
@@ -134,8 +164,12 @@ void readDataFromInputFile(float **A, float *B, int n, FILE *inputFile) {
 // Calcula os valores normalizados para a matriz A e para o vetor B.
 // Os valores iniciais das variáveis X são definidos como o vetor B normalizado.
 void normalize(float **A, float *currentX, float *B, float **normalizedA, float *normalizedB ,int n) {
-    int i, j;
+    // Iteradores
+    int i;
+    int j;
 
+    // Calcula a matriz (L* + R*) que tem a diagonal nula e os elementos
+    // de uma linha divididos pelo elemento da diagonal de A
     for(i = 0; i < n; i ++) {
         for(j = 0; j < n; j++) {
             if(i == j) {
@@ -147,6 +181,7 @@ void normalize(float **A, float *currentX, float *B, float **normalizedA, float 
         }
     }
 
+    // Calcula a matriz normalizada de B e o primeiro vetor X
     for(i = 0; i < n; i++) {
         normalizedB[i] = B[i] / A[i][i];
         currentX[i] = normalizedB[i];
