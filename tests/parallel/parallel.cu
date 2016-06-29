@@ -106,8 +106,8 @@ __device__ void getError(float *currentX, float *previousX, int n) {
         }
         // O resultado final e adicionado do valor da linha correspondente
         // do vetor B e finalmente atribuido ao vetor X.
-        sum += normalizedB[myIndex];
-        currentX[myIndex] = sum;
+        sum += normalizedB[myIndex + i];
+        currentX[myIndex + i] = sum;
     }
 
     
