@@ -172,6 +172,7 @@ __device__ void getError(float *currentX, float *previousX, int n) {
             if(myIndex == 0) {
                 getError(currentX, previousX, n);
             }
+            __syncthreads();
         } while(reachedErrorTolerance == 0);
         // O laco acima eh repetido enquanto nao for atingido o nivel de erro desejado
     }
