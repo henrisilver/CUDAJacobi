@@ -29,3 +29,23 @@ echo ""
 echo See output files in the sequential and parallel folders for results
 
 echo ""
+echo Scanning for output differences...
+
+for sequentialResult in $(find sequential/ -name '*.out');
+do
+    sfname=$(basename $sequentialResult)
+    #echo $sfname
+
+    for parallelResult in $(find parallel/ -name '*.out');
+    do
+        pfname=$(basename $parallelResult)
+        #echo $pfname
+
+        if [ "$sfname" = "$pfname" ];
+        then
+            diff $sequentialResult $parallelResult
+        fi
+    done
+done
+
+echo ""

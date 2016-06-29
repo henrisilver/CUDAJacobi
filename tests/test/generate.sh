@@ -2,7 +2,7 @@
 
 let i=0
 
-dimensions=(10 100 500 1000)
+dimensions=(10 100 500 1000 1500)
 
 for n in "${dimensions[@]}"
 do

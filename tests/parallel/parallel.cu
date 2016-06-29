@@ -92,7 +92,6 @@ __device__ void getError(float *currentX, float *previousX, int n) {
  __device__ void computeNewCurrentX(float *currentX, float *previousX, float *normalizedA, float *normalizedB, int n, int myIndex, int range) {
     
     // Cada thread calculara uma das posicoes do vetor X
-    int myIndex = threadIdx.x;
     int i, j;
     float sum;
 
