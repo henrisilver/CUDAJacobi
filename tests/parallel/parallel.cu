@@ -109,13 +109,6 @@ __device__ void getError(float *currentX, float *previousX, int n) {
         sum += normalizedB[myIndex + i];
         currentX[myIndex + i] = sum;
     }
-
-    
-
-    // Barreira utilizada para que todos os elementos de X sejam calculados antes
-    // de que se avance para a proxima etapa
-    __syncthreads();
-
 }
 
 // Cada thread copia a sua posicao do vetor X da iteracao atual para a iteracao anterior
@@ -164,15 +157,20 @@ __device__ void getError(float *currentX, float *previousX, int n) {
             // Primeiramente, passa-se os valores atuais do vetor X para um vetor representando
             // a iteracao passada
             copyCurrentXToPreviousX(currentX, previousX, myIndex, quoc);
+            __syncthreads();
 
             // Sao calculados os valores da iteracao K+1 do vetor X
             computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n, myIndex, quoc);
+            // Barreira utilizada para que todos os elementos de X sejam calculados antes
+            // de que se avance para a proxima etapa
+            __syncthreads();
 
             // A checagem de erro eh feita apenas uma vez
             if(myIndex == 0) {
                 getError(currentX, previousX, n);
             }
             __syncthreads();
+            
         } while(reachedErrorTolerance == 0);
         // O laco acima eh repetido enquanto nao for atingido o nivel de erro desejado
     }
