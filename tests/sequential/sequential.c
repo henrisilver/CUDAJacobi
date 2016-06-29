@@ -101,7 +101,7 @@ int main(int argc, const char * argv[]) {
     printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
 
     // Escreve os resultados no arquivo de saida
-    fprintf(outputFile, "*** Sequential Results ***\n");
+    fprintf(outputFile, "*** Results ***\n");
     showResults(A, currentX, B, n, outputFile);
 
     fclose(inputFile);

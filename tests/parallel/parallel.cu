@@ -334,7 +334,7 @@ int main(int argc, const char * argv[]) {
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
 
-    fprintf(outputFile, "*** Parallel Results ***\n");
+    fprintf(outputFile, "*** Results ***\n");
     showResults(h_A, h_currentX, h_B, n, outputFile);
 
     fclose(inputFile);
