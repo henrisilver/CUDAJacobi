@@ -17,7 +17,7 @@
 #define DOES_NOT_CONVERGE 1
 #define CONVERGE 0
 
-#define DEBUG 1
+#define DEBUG 0
 #define DEBUG_LEVEL_2 0
 
 // Os números que compõem a matriz gerada aleatóriamente terão
