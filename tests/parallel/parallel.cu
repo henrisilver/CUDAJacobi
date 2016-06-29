@@ -154,29 +154,24 @@ __host__ void showResults(float *A, float *currentX, float *B, int n) {
     int i;
     float calculatedResult = 0.0;
     int line = rand() % n;
-    
-    srand((unsigned int) time(NULL));
-    
-    printf("Resultado X:\n");
-    
+        
     for(i = 0; i < n; i++) {
-        printf("[%2.3f] ", currentX[i]);
+        fprintf(outputFile, "X[%d] = %f\n", i, currentX[i]);
     }
-    printf("\n\n");
     
     printf("Equação aleatória para avaliação de corretude:\n");
     for (i = 0; i < n; i++) {
-        printf("%2.3f * %2.3f", A[line * n + i], currentX[i]);
+        fprintf(outputFile, "%2.3f * %2.3f", A[line * n + i], currentX[i]);
         calculatedResult += A[line * n + i] * currentX[i];
         if(i != n-1) {
-            printf(" + ");
+            fprintf(outputFile, " + ");
         }
         else {
-            printf(" = [%2.3f]\n", calculatedResult);
+            fprintf(outputFile, " = [%2.3f]\n", calculatedResult);
         }
     }
-    printf("Valor esperado para o resultado:\n%2.3f\n", B[line]);
-    printf("Diferença entre resultados:\n%2.3f\n", B[line] - calculatedResult);
+    fprintf(outputFile, "Valor esperado para o resultado:\n%2.3f\n", B[line]);
+    fprintf(outputFile, "Diferença entre resultados:\n%2.3f\n", B[line] - calculatedResult);
 }
 
 __host__ void printAll(float *A, float *X, float *B, int n) {
@@ -244,7 +239,7 @@ int main(int argc, const char * argv[]) {
         exit(0);
     }
 
-    outputFile = fopen(argv[2],"wb");
+    outputFile = fopen(argv[2],"wt");
     if (outputFile == null) {
         perror("Failed to open file");
         exit(0);
@@ -284,12 +279,8 @@ int main(int argc, const char * argv[]) {
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
 
-    //printf("\n\n");
-    //showResults(h_A, h_currentX, h_B, n);
-
-    for(i = 0; i < n; i++) {
-        fwrite(&h_currentX[i], sizeof(float), 1, outputFile);
-    }
+    fprintf(outputFile, "*** Sequential Results ***\n");
+    showResults(h_A, h_currentX, h_B, n, outputFile);
 
     fclose(inputFile);
     fclose(outputFile);
