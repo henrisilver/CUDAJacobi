@@ -89,19 +89,21 @@ __device__ void getError(float *currentX, float *previousX, int n) {
 }
 
 // kernel que computa os valores de X para a iteracao K + 1 a paritr dos valores obtidos na iteracao K.
- __device__ void computeNewCurrentX(float *currentX, float *previousX, float *normalizedA, float *normalizedB, int n) {
+ __device__ void computeNewCurrentX(float *currentX, float *previousX, float *normalizedA, float *normalizedB, int n, int myIndex, int range) {
     
     // Cada thread calculara uma das posicoes do vetor X
     int myIndex = threadIdx.x;
-    int j;
+    int i, j;
     float sum;
 
     // Os calculos sao efetuados, variando-se apenas as colunas da matriz A
     // e as linhas do vetor X da iteracao K
-    sum = 0.0;
-    for(j = 0; j < n; j++) {
-        if(myIndex != j) {
-            sum -= normalizedA[myIndex * n + j] * previousX[j];
+    for(i = 0; i < range; i++) {
+        sum = 0.0;
+        for(j = 0; j < n; j++) {
+            if((myIndex + i) != j) {
+                sum -= normalizedA[(myIndex + i) * n + j] * previousX[j];
+            }
         }
     }
 
@@ -117,10 +119,13 @@ __device__ void getError(float *currentX, float *previousX, int n) {
 }
 
 // Cada thread copia a sua posicao do vetor X da iteracao atual para a iteracao anterior
- __device__ void copyCurrentXToPreviousX(float *currentX, float *previousX) {
+ __device__ void copyCurrentXToPreviousX(float *currentX, float *previousX, int myIndex, int range) {
     
-    int myIndex = threadIdx.x;
-    previousX[myIndex] = currentX[myIndex];
+    int i;
+    for(i = 0; i < range; i++) {
+        previousX[myIndex + i] = currentX[myIndex + i];
+    }
+
 }
 
 // kernel principal chamado do host. Aqui e definido o esqueleto da solucao
@@ -128,7 +133,25 @@ __device__ void getError(float *currentX, float *previousX, int n) {
 
     // e calculado o indice de cada thread. Se estiver nos limites da dimensao desejada
     int myIndex = threadIdx.x;
+    int numThreads = blockDim.x;
+    int quoc = 1;
+    
     if(myIndex < n) {
+
+        if(n > numThreads) {
+            quoc = n/numThreads;
+            quoc = quoc == 0 ? 1 : quoc;
+            int rest = n % numThreads;
+            
+            if(myIndex >= rest) {
+                myIndex = n - (numThreads - threadIdx.x) * quoc;
+            }
+            else {
+                quoc+=1;
+                myIndex = myIndex * quoc;
+            }
+            
+        }
 
         // Entao a normalizacao acontece uma vez apenas (so para a thread 0)
         if(myIndex == 0) {
@@ -140,10 +163,10 @@ __device__ void getError(float *currentX, float *previousX, int n) {
 
             // Primeiramente, passa-se os valores atuais do vetor X para um vetor representando
             // a iteracao passada
-            copyCurrentXToPreviousX(currentX, previousX);
+            copyCurrentXToPreviousX(currentX, previousX, myIndex, quoc);
 
             // Sao calculados os valores da iteracao K+1 do vetor X
-            computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
+            computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n, myIndex, quoc);
 
             // A checagem de erro eh feita apenas uma vez
             if(myIndex == 0) {
