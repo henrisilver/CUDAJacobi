@@ -226,6 +226,7 @@ int main(int argc, const char * argv[]) {
     float *h_B; // Vetor B original
  
     int n; // Ordem da matriz A
+    int i;
 
     float *d_A;
     float *d_currentX;
