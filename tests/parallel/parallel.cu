@@ -141,13 +141,13 @@ __device__ void getError(float *currentX, float *previousX, int n) {
             }
             else {
                 quoc+=1;
-                myIndex = myIndex * quoc;
+                myIndex = threadIdx.x * quoc;
             }
             
         }
 
         // Entao a normalizacao acontece uma vez apenas (so para a thread 0)
-        if(myIndex == 0) {
+        if(threadIdx.x == 0) {
             normalize(A, currentX, B, normalizedA, normalizedB, n);
         }
 
@@ -166,7 +166,7 @@ __device__ void getError(float *currentX, float *previousX, int n) {
             __syncthreads();
 
             // A checagem de erro eh feita apenas uma vez
-            if(myIndex == 0) {
+            if(threadIdx.x == 0) {
                 getError(currentX, previousX, n);
             }
             __syncthreads();
