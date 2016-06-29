@@ -26,7 +26,8 @@
 #define ERROR_TOLERANCE 0.0001
 #define null NULL
 
- __device__ int reachedErrorTolerance = 0;
+__device__ int reachedErrorTolerance = 0;
+__shared__ float auxiliaryXPerBlock;
 
  __device__ float absolute(float x) {
     
@@ -34,6 +35,8 @@
 }
 
  __device__ void normalize(float *A, float *currentX, float *B, float *normalizedA, float *normalizedB ,int n) {
+    int myBlockIndex = blockIdx.x;
+    int myThreadIndex = threadIdx.x;
     int i, j;
 
     for(i = 0; i < n; i ++) {
@@ -85,43 +88,49 @@ __device__ void getError(float *currentX, float *previousX, int n) {
 
  __device__ void computeNewCurrentX(float *currentX, float *previousX, float *normalizedA, float *normalizedB, int n) {
     
-    int myIndex = threadIdx.x;
-    int j;
-    float sum;
+    int myBlockIndex = blockIdx.x;
+    int myThreadIndex = threadIdx.x;
+    float result;
+    
+    if(myBlockIndex != myThreadIndex) {
+        result = normalizedA[myBlockIndex * n + myThreadIndex] * previousX[myThreadIndex];
+        atomicAdd(&auxiliaryXPerBlock, result); 
+    }  
 
-    sum = 0.0;
-    for(j = 0; j < n; j++) {
-        if(myIndex != j) {
-            sum -= normalizedA[myIndex * n + j] * previousX[j];
-        }
+    __syncthreads();
+
+    if(myThreadIndex == 0) {
+        auxiliaryXPerBlock += normalizedB[myBlockIndex];
+        currentX[myBlockIndex] = auxiliaryXPerBlock;
     }
-        sum += normalizedB[myIndex];
-        currentX[myIndex] = sum;
-        __syncthreads();
+    
+    __syncthreads();
 
 }
 
  __device__ void copyCurrentXToPreviousX(float *currentX, float *previousX) {
     
-    int myIndex = threadIdx.x;
+    int myIndex = blockIdx.x;
     previousX[myIndex] = currentX[myIndex];
 }
 
  __global__ void solveJacobiRichardson(float *A, float *B, float *normalizedA, float *normalizedB, float * currentX, float *previousX, int n) {
 
-    int myIndex = threadIdx.x;
-    if(myIndex < n) {
-
-        if(myIndex == 0) {
-            normalize(A, currentX, B, normalizedA, normalizedB, n);
-        }
-
+    int myBlockIndex = blockIdx.x;
+    int myThreadIndex = threadIdx.x;
+    if(myBlockIndex < n && myThreadIndex < n) {
+        normalize(A, currentX, B, normalizedA, normalizedB, n);
         do {
-            copyCurrentXToPreviousX(currentX, previousX);
+            if(myThreadIndex == 0) {
+                copyCurrentXToPreviousX(currentX, previousX);
+                auxiliaryXPerBlock = 0.0;
+            } 
+
             computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
-            if(myIndex == 0) {
+            if(myIndexBlockIndex == 0 && myThreadIndex == 0) {
                 getError(currentX, previousX, n);
             }
+            __syncthreads();
         } while(reachedErrorTolerance == 0);
     }
 
@@ -261,7 +270,7 @@ int main(int argc, const char * argv[]) {
     // } while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
     // <<<<<>>>>>> CUDA FREE THRUST
 
-    solveJacobiRichardson<<<1, n>>>(d_A, d_B, d_normalizedA, d_normalizedB, d_currentX, d_previousX, n);
+    solveJacobiRichardson<<<n, n>>>(d_A, d_B, d_normalizedA, d_normalizedB, d_currentX, d_previousX, n);
 
     cudaMemcpy(h_currentX,d_currentX, n * sizeof(float),cudaMemcpyDeviceToHost);
 
