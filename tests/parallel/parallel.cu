@@ -159,7 +159,7 @@ __host__ void showResults(float *A, float *currentX, float *B, int n, FILE *outp
         fprintf(outputFile, "X[%d] = %f\n", i, currentX[i]);
     }
     
-    printf("Equação aleatória para avaliação de corretude:\n");
+    fprintf(outputFile, "\nEquação aleatória para avaliação de corretude:\n");
     for (i = 0; i < n; i++) {
         fprintf(outputFile, "%2.3f * %2.3f", A[line * n + i], currentX[i]);
         calculatedResult += A[line * n + i] * currentX[i];
@@ -278,7 +278,7 @@ int main(int argc, const char * argv[]) {
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
 
-    fprintf(outputFile, "*** Sequential Results ***\n");
+    fprintf(outputFile, "*** Parallel Results ***\n");
     showResults(h_A, h_currentX, h_B, n, outputFile);
 
     fclose(inputFile);
