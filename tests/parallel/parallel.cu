@@ -235,6 +235,9 @@ int main(int argc, const char * argv[]) {
     float *d_normalizedA; // Matriz A normalizada
     float *d_normalizedB; // Vetor B normalizado
 
+    clock_t start, end;
+    double cpu_time_used;
+
     inputFile = fopen(argv[1],"rb");
     if (inputFile == null) {
         perror("Failed to open file");
@@ -246,6 +249,9 @@ int main(int argc, const char * argv[]) {
         perror("Failed to open file");
         exit(0);
     }
+
+
+    start = clock();
 
     initialize(&h_A, &h_currentX, &h_B, &n, inputFile);
     readDataFromInputFile(h_A, h_B, n, inputFile);
@@ -273,12 +279,20 @@ int main(int argc, const char * argv[]) {
 
     cudaMemcpy(h_currentX,d_currentX, n * sizeof(float),cudaMemcpyDeviceToHost);
 
+    end = clock();
+
+    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
+    printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
+
     //printf("\n\n");
     //showResults(h_A, h_currentX, h_B, n);
 
     for(i = 0; i < n; i++) {
         fwrite(&h_currentX[i], sizeof(float), 1, outputFile);
     }
+
+    fclose(inputFile);
+    fclose(outputFile);
     
     cleanUp(h_A, h_currentX, h_B, d_A, d_currentX, d_B, d_normalizedA, d_previousX, d_normalizedB);
 
