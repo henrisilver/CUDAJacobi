@@ -104,12 +104,13 @@ __device__ void getError(float *currentX, float *previousX, int n) {
                 sum -= normalizedA[(myIndex + i) * n + j] * previousX[j];
             }
         }
+        // O resultado final e adicionado do valor da linha correspondente
+        // do vetor B e finalmente atribuido ao vetor X.
+        sum += normalizedB[myIndex];
+        currentX[myIndex] = sum;
     }
 
-    // O resultado final e adicionado do valor da linha correspondente
-    // do vetor B e finalmente atribuido ao vetor X.
-    sum += normalizedB[myIndex];
-    currentX[myIndex] = sum;
+    
 
     // Barreira utilizada para que todos os elementos de X sejam calculados antes
     // de que se avance para a proxima etapa
