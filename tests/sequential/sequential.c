@@ -49,9 +49,9 @@ int main(int argc, const char * argv[]) {
     float **normalizedA; // Matriz A normalizada
     float *normalizedB; // Vetor B normalizado
     int n; // Ordem da matriz A
-    clock_t start; // Clock no comeco da execucao
-    clock_t end; // Clock ao fim da execucao
-    double cpu_time_used; // Tempo de cpu utilizado
+    clock_t startAlloc, startNoAlloc; // Clock no comeco da execucao
+    clock_t endAlloc, endNoAlloc; // Clock ao fim da execucao
+    double cpu_time_used_alloc, cpu_time_used_no_alloc; // Tempo de cpu utilizado
 
     // Tenta abrir o arquivo de input e se falhar, sai do programa
     inputFile = fopen(argv[1],"rb");
@@ -67,6 +67,8 @@ int main(int argc, const char * argv[]) {
         exit(0);
     }
     
+    startAlloc = clock();
+
     // Aloca a memoria para a matrix A, vetor B, matriz normalizada de A, matriz normalizada
     // de B, vetor X corrente e vetor X anterior. Além disso recupera do arquivo de entrada
     // a dimencao da matriz e dos vetores que serao lidos de inputFile
@@ -77,8 +79,8 @@ int main(int argc, const char * argv[]) {
     readDataFromInputFile(A, B, n, inputFile);
 
     // Inicio da execucao
-    start = clock();
-    
+    startNoAlloc = clock();
+
     // Calcula a matriz normalizada e o vetor normalizado
     // A matriz a vira (L* + R*)
     normalize(A, currentX, B, normalizedA, normalizedB, n);
@@ -96,11 +98,14 @@ int main(int argc, const char * argv[]) {
     while(getError(currentX, previousX, n) > ERROR_TOLERANCE);
 
     // Fim da execucao
-    end = clock();
+    endNoAlloc = clock();
+    endAlloc = endNoAlloc;
 
     // Calcula o tempo de CPU utilizado
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-    printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
+    cpu_time_used_alloc = ((double) (endAlloc - startAlloc)) / CLOCKS_PER_SEC;
+    cpu_time_used_no_alloc = ((double) (endNoAlloc - startNoAlloc)) / CLOCKS_PER_SEC;
+    printf("Elapsed time considering memory allocation: %fs for dimension %d\n", cpu_time_used_alloc, n);
+    printf("Elapsed time considering only computations: %fs for dimension %d\n", cpu_time_used_no_alloc, n);
 
     // Escreve os resultados no arquivo de saida
     fprintf(outputFile, "*** Results ***\n");

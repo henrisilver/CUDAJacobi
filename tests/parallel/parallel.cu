@@ -288,8 +288,9 @@ int main(int argc, const char * argv[]) {
     float *d_normalizedB;
 
     // Variaveis para contagem de tempo transcorrido
-    clock_t start, end;
-    double cpu_time_used;
+    clock_t startAlloc, startNoAlloc; // Clock no comeco da execucao
+    clock_t endAlloc, endNoAlloc; // Clock ao fim da execucao
+    double cpu_time_used_alloc, cpu_time_used_no_alloc; // Tempo de cpu utilizado
 
     // Arquivos sao abertos
     inputFile = fopen(argv[1],"rb");
@@ -303,6 +304,8 @@ int main(int argc, const char * argv[]) {
         perror("Failed to open file");
         exit(0);
     }
+
+    startAlloc = clock();
 
     // Matrizes e vetores do host sao inicializados e dados sao lidos do arquivo de entrada
     initialize(&h_A, &h_currentX, &h_B, &n, inputFile);
@@ -320,18 +323,22 @@ int main(int argc, const char * argv[]) {
     cudaMemcpy(d_A,h_A, n * n * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_B,h_B, n * sizeof(float), cudaMemcpyHostToDevice);
 
-    start = clock();
+    startNoAlloc = clock();
 
     // Chamada do kernel principal, com 1 bloco e n threads (n eh a dimensao da matriz)
     solveJacobiRichardson<<<1, 1024>>>(d_A, d_B, d_normalizedA, d_normalizedB, d_currentX, d_previousX, n);
-    
-    end = clock();
+
+    endNoAlloc = clock();
 
     // Resultados do device transferidos para o host
     cudaMemcpy(h_currentX,d_currentX, n * sizeof(float),cudaMemcpyDeviceToHost);
 
-    cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-    printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
+    endAlloc = clock();
+
+    cpu_time_used_alloc = ((double) (endAlloc - startAlloc)) / CLOCKS_PER_SEC;
+    cpu_time_used_no_alloc = ((double) (endNoAlloc - startNoAlloc)) / CLOCKS_PER_SEC;
+    printf("Elapsed time considering memory allocation: %fs for dimension %d\n", cpu_time_used_alloc, n);
+    printf("Elapsed time considering only computations: %fs for dimension %d\n", cpu_time_used_no_alloc, n);
 
     fprintf(outputFile, "*** Results ***\n");
     showResults(h_A, h_currentX, h_B, n, outputFile);
