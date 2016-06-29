@@ -66,8 +66,7 @@ int main(int argc, const char * argv[]) {
         perror("Failed to open file");
         exit(0);
     }
-    // Inicio da execucao
-    start = clock();
+    
     // Aloca a memoria para a matrix A, vetor B, matriz normalizada de A, matriz normalizada
     // de B, vetor X corrente e vetor X anterior. Além disso recupera do arquivo de entrada
     // a dimencao da matriz e dos vetores que serao lidos de inputFile
@@ -77,6 +76,9 @@ int main(int argc, const char * argv[]) {
     // com os valores lidos de inputFile
     readDataFromInputFile(A, B, n, inputFile);
 
+    // Inicio da execucao
+    start = clock();
+    
     // Calcula a matriz normalizada e o vetor normalizado
     // A matriz a vira (L* + R*)
     normalize(A, currentX, B, normalizedA, normalizedB, n);

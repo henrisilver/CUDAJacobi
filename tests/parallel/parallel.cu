@@ -304,9 +304,6 @@ int main(int argc, const char * argv[]) {
         exit(0);
     }
 
-
-    start = clock();
-
     // Matrizes e vetores do host sao inicializados e dados sao lidos do arquivo de entrada
     initialize(&h_A, &h_currentX, &h_B, &n, inputFile);
     readDataFromInputFile(h_A, h_B, n, inputFile);
@@ -323,13 +320,15 @@ int main(int argc, const char * argv[]) {
     cudaMemcpy(d_A,h_A, n * n * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_B,h_B, n * sizeof(float), cudaMemcpyHostToDevice);
 
+    start = clock();
+
     // Chamada do kernel principal, com 1 bloco e n threads (n eh a dimensao da matriz)
     solveJacobiRichardson<<<1, 1024>>>(d_A, d_B, d_normalizedA, d_normalizedB, d_currentX, d_previousX, n);
+    
+    end = clock();
 
     // Resultados do device transferidos para o host
     cudaMemcpy(h_currentX,d_currentX, n * sizeof(float),cudaMemcpyDeviceToHost);
-
-    end = clock();
 
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
     printf("Elapsed time: %fs for dimension %d\n", cpu_time_used, n);
