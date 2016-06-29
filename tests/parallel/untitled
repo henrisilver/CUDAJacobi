@@ -127,7 +127,7 @@ __device__ void getError(float *currentX, float *previousX, int n) {
     // e calculado o indice de cada thread. Se estiver nos limites da dimensao desejada
     int myIndex = threadIdx.x;
     int numThreads = blockDim.x;
-    int quoc = 1;
+    int quoc = 1, i;
     
     if(myIndex < n) {
 
@@ -158,6 +158,14 @@ __device__ void getError(float *currentX, float *previousX, int n) {
             // a iteracao passada
             copyCurrentXToPreviousX(currentX, previousX, myIndex, quoc);
             __syncthreads();
+            
+            if(threadIdx.x == 0) {
+                printf("COMPARE:\n");
+                for(i = 0; i < n; i++) {
+                    printf("P[%d] = %f\n - C[%d] = %f\n", i, previousX[i], i, currentX[i]);
+                }
+                printf("\n\n");
+            }
 
             // Sao calculados os valores da iteracao K+1 do vetor X
             computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n, myIndex, quoc);
@@ -170,7 +178,7 @@ __device__ void getError(float *currentX, float *previousX, int n) {
                 getError(currentX, previousX, n);
             }
             __syncthreads();
-
+            
         } while(reachedErrorTolerance == 0);
         // O laco acima eh repetido enquanto nao for atingido o nivel de erro desejado
     }
@@ -292,13 +300,13 @@ int main(int argc, const char * argv[]) {
     double cpu_time_used;
 
     // Arquivos sao abertos
-    inputFile = fopen(argv[1],"rb");
+    inputFile = fopen("input4.in","rb");
     if (inputFile == null) {
         perror("Failed to open file");
         exit(0);
     }
 
-    outputFile = fopen(argv[2],"wt");
+    outputFile = fopen("output4.out","wt");
     if (outputFile == null) {
         perror("Failed to open file");
         exit(0);
@@ -325,6 +333,8 @@ int main(int argc, const char * argv[]) {
 
     // Chamada do kernel principal, com 1 bloco e n threads (n eh a dimensao da matriz)
     solveJacobiRichardson<<<1, 1024>>>(d_A, d_B, d_normalizedA, d_normalizedB, d_currentX, d_previousX, n);
+
+    printf( "Error!\n%s\n", cudaGetErrorString(cudaGetLastError()) );
 
     // Resultados do device transferidos para o host
     cudaMemcpy(h_currentX,d_currentX, n * sizeof(float),cudaMemcpyDeviceToHost);
