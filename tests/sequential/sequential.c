@@ -71,7 +71,7 @@ int main(int argc, const char * argv[]) {
 
     // Aloca a memoria para a matrix A, vetor B, matriz normalizada de A, matriz normalizada
     // de B, vetor X corrente e vetor X anterior. Além disso recupera do arquivo de entrada
-    // a dimencao da matriz e dos vetores que serao lidos de inputFile
+    // a dimensao da matriz e dos vetores que serao lidos de inputFile
     initialize(&A, &currentX, &B, &normalizedA, &previousX, &normalizedB, &n, inputFile);
 
     // Apos a alocacao das memorias, readDataFromInputFile preenche a Matriz A e o vetor B
