@@ -34,7 +34,7 @@ void normalize(float **A, float *currentX, float *B, float **normalizedA, float 
 void copyCurrentXToPreviousX(float *currentX, float *previousX, int n);
 void computeNewCurrentX(float *currentX, float *previousX, float **normalizedA, float *normalizedB, int n);
 float getError(float *currentX, float *previousX, int n);
-void showResults(float **A, float *currentX, float *B, int n);
+void showResults(float **A, float *currentX, float *B, int n, FILE *outputFile);
 void printAll(float **A, float *X, float *B, int n);
 void cleanUp(float ***A, float **currentX, float **B, float ***normalizedA, float **previousX, float **normalizedB ,int n);
 
@@ -51,7 +51,7 @@ int main(int argc, const char * argv[]) {
     int n; // Ordem da matriz A
     clock_t start, end;
     double cpu_time_used;
-    int i;
+    //int i;
 
     inputFile = fopen(argv[1],"rb");
     if (inputFile == null) {

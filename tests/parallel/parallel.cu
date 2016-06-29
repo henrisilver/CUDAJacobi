@@ -150,7 +150,7 @@ __host__ void readDataFromInputFile(float *A, float *B, int n, FILE *inputFile) 
     }
 }
 
-__host__ void showResults(float *A, float *currentX, float *B, int n) {
+__host__ void showResults(float *A, float *currentX, float *B, int n, FILE *outputFile) {
     int i;
     float calculatedResult = 0.0;
     int line = rand() % n;
