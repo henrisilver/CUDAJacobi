@@ -26,13 +26,17 @@
 #define ERROR_TOLERANCE 0.0001
 #define null NULL
 
+// variável utilizada para controlar quando o limite de erro foi atingido
+// de forma a encerrar o método
  __device__ int reachedErrorTolerance = 0;
 
+// kernel para cálculo do valor absoluto de pontos flutuantes
  __device__ float absolute(float x) {
     
     return x < 0.0 ? -x : x;
 }
 
+// kernel utilizado para calcular a normalização das matrizes A e B e gerar os valores iniciais para o vetor X
  __device__ void normalize(float *A, float *currentX, float *B, float *normalizedA, float *normalizedB ,int n) {
     int i, j;
 
@@ -53,6 +57,7 @@
     }
 }
 
+// kernel utilizado para calcular o erro de uma iteracao
 __device__ void getError(float *currentX, float *previousX, int n) {
     float maxRelativeError;
     float currentAbsoluteError;
@@ -83,50 +88,74 @@ __device__ void getError(float *currentX, float *previousX, int n) {
     }
 }
 
+// kernel que computa os valores de X para a iteracao K + 1 a paritr dos valores obtidos na iteracao K.
  __device__ void computeNewCurrentX(float *currentX, float *previousX, float *normalizedA, float *normalizedB, int n) {
     
+    // Cada thread calculara uma das posicoes do vetor X
     int myIndex = threadIdx.x;
     int j;
     float sum;
 
+    // Os calculos sao efetuados, variando-se apenas as colunas da matriz A
+    // e as linhas do vetor X da iteracao K
     sum = 0.0;
     for(j = 0; j < n; j++) {
         if(myIndex != j) {
             sum -= normalizedA[myIndex * n + j] * previousX[j];
         }
     }
-        sum += normalizedB[myIndex];
-        currentX[myIndex] = sum;
-        __syncthreads();
+
+    // O resultado final e adicionado do valor da linha correspondente
+    // do vetor B e finalmente atribuido ao vetor X.
+    sum += normalizedB[myIndex];
+    currentX[myIndex] = sum;
+
+    // Barreira utilizada para que todos os elementos de X sejam calculados antes
+    // de que se avance para a proxima etapa
+    __syncthreads();
 
 }
 
+// Cada thread copia a sua posicao do vetor X da iteracao atual para a iteracao anterior
  __device__ void copyCurrentXToPreviousX(float *currentX, float *previousX) {
     
     int myIndex = threadIdx.x;
     previousX[myIndex] = currentX[myIndex];
 }
 
+// kernel principal chamado do host. Aqui e definido o esqueleto da solucao
  __global__ void solveJacobiRichardson(float *A, float *B, float *normalizedA, float *normalizedB, float * currentX, float *previousX, int n) {
 
+    // e calculado o indice de cada thread. Se estiver nos limites da dimensao desejada
     int myIndex = threadIdx.x;
     if(myIndex < n) {
 
+        // Entao a normalizacao acontece uma vez apenas (so para a thread 0)
         if(myIndex == 0) {
             normalize(A, currentX, B, normalizedA, normalizedB, n);
         }
 
+        // Eh repetido o laco enquanto onivel de erro desejado nao for atingido
         do {
+
+            // Primeiramente, passa-se os valores atuais do vetor X para um vetor representando
+            // a iteracao passada
             copyCurrentXToPreviousX(currentX, previousX);
+
+            // Sao calculados os valores da iteracao K+1 do vetor X
             computeNewCurrentX(currentX, previousX, normalizedA, normalizedB, n);
+
+            // A checagem de erro eh feita apenas uma vez
             if(myIndex == 0) {
                 getError(currentX, previousX, n);
             }
         } while(reachedErrorTolerance == 0);
+        // O laco acima eh repetido enquanto nao for atingido o nivel de erro desejado
     }
 
  }
 
+// Inicializacao de matrizes e vetores do host
 __host__ void initialize(float **A, float **currentX, float **B, int *n, FILE *file) {
     fread(n, sizeof(int), 1, file);
 
@@ -136,6 +165,7 @@ __host__ void initialize(float **A, float **currentX, float **B, int *n, FILE *f
 
 }
 
+// Dados para popular vetores e matrizes do host sao lidos do arquivo
 __host__ void readDataFromInputFile(float *A, float *B, int n, FILE *inputFile) {
     int i, j;
 
@@ -150,6 +180,7 @@ __host__ void readDataFromInputFile(float *A, float *B, int n, FILE *inputFile) 
     }
 }
 
+// Resultados sao transferidos para arquivo
 __host__ void showResults(float *A, float *currentX, float *B, int n, FILE *outputFile) {
     int i;
     float calculatedResult = 0.0;
@@ -174,6 +205,7 @@ __host__ void showResults(float *A, float *currentX, float *B, int n, FILE *outp
     fprintf(outputFile, "Diferença entre resultados:\n%2.3f\n", B[line] - calculatedResult);
 }
 
+// Funcao de host auxiliar para imprimir valores. Usada durante depuracao
 __host__ void printAll(float *A, float *X, float *B, int n) {
     printf("\nA:\n");
     
@@ -199,6 +231,7 @@ __host__ void printAll(float *A, float *X, float *B, int n) {
     printf("\n");
 }
 
+// Funcao de host para liberar memoria alocada tanto para host quanto para device
 __host__ void cleanUp(float *h_A, float *h_currentX, float *h_B, float *d_A, float *d_currentX, float *d_B, float *d_normalizedA, float *d_previousX, float *d_normalizedB) {
     free(h_A);
     free(h_B);
@@ -214,24 +247,29 @@ __host__ void cleanUp(float *h_A, float *h_currentX, float *h_B, float *d_A, flo
 
 int main(int argc, const char * argv[]) {
 
+    // Arquivos de entrada e saida
     FILE *inputFile = null;   
     FILE *outputFile = null;
+
     float *h_A; // Matriz A original
     float *h_currentX; // Vetor X - variáveis - valores da iteração atual
     float *h_B; // Vetor B original
  
     int n; // Ordem da matriz A
 
+    // Vetores e matrizes do device
     float *d_A;
     float *d_currentX;
     float *d_B;
-    float *d_previousX; // Vetor X - variáveis - valores da iteração anterior
-    float *d_normalizedA; // Matriz A normalizada
-    float *d_normalizedB; // Vetor B normalizado
+    float *d_previousX; 
+    float *d_normalizedA;
+    float *d_normalizedB;
 
+    // Variaveis para contagem de tempo transcorrido
     clock_t start, end;
     double cpu_time_used;
 
+    // Arquivos sao abertos
     inputFile = fopen(argv[1],"rb");
     if (inputFile == null) {
         perror("Failed to open file");
@@ -247,9 +285,11 @@ int main(int argc, const char * argv[]) {
 
     start = clock();
 
+    // Matrizes e vetores do host sao inicializados e dados sao lidos do arquivo de entrada
     initialize(&h_A, &h_currentX, &h_B, &n, inputFile);
     readDataFromInputFile(h_A, h_B, n, inputFile);
 
+    // vetores e matrizes do device sao alocados
     cudaMalloc(&d_A, n * n * sizeof(float));
     cudaMalloc(&d_currentX, n * sizeof(float));
     cudaMalloc(&d_B, n * sizeof(float));
@@ -257,11 +297,14 @@ int main(int argc, const char * argv[]) {
     cudaMalloc(&d_normalizedA, n * n * sizeof(float));
     cudaMalloc(&d_normalizedB, n * sizeof(float));
 
+    // Valores dos vetores e matrizes sao copiados para as versoes do device
     cudaMemcpy(d_A,h_A, n * n * sizeof(float), cudaMemcpyHostToDevice);
     cudaMemcpy(d_B,h_B, n * sizeof(float), cudaMemcpyHostToDevice);
 
+    // Chamada do kernel principal, com 1 bloco e n threads (n eh a dimensao da matriz)
     solveJacobiRichardson<<<1, n>>>(d_A, d_B, d_normalizedA, d_normalizedB, d_currentX, d_previousX, n);
 
+    // Resultados do device transferidos para o host
     cudaMemcpy(h_currentX,d_currentX, n * sizeof(float),cudaMemcpyDeviceToHost);
 
     end = clock();
